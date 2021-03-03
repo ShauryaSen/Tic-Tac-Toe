@@ -1,22 +1,43 @@
 package com.shauryasen;
 
+import java.lang.reflect.Array;
 import java.util.*;
+
+import static java.sql.Types.NULL;
 
 public class TicTacToe {
     static ArrayList<Integer> playerTurns = new ArrayList<Integer>();
     static ArrayList<Integer> cpuTurns = new ArrayList<Integer>();
+    static ArrayList<Integer> available = new ArrayList<Integer>();
+    // static List<Integer> available = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9);
+
+    /*
+    static int arr[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+    static List available = Arrays.asList(arr);
+    */
+
+    // create an empty game board
+    static char[][] gameBoard = {{' ', '|', ' ', '|', ' '},
+            {'-', '+', '-', '+', '-'},
+            {' ', '|', ' ', '|', ' '},
+            {'-', '+', '-', '+', '-'},
+            {' ', '|', ' ', '|', ' '}};
 
     public static void main(String[] args) {
+        // this is so dumb but add all the numbers to available NOTHING ELSE WORKED AND IM LAZY I'M SORRY
+        available.add(1);
+        available.add(2);
+        available.add(3);
+        available.add(4);
+        available.add(5);
+        available.add(6);
+        available.add(7);
+        available.add(8);
+        available.add(9);
+
         int cpuPosition;
         int playerPosition;
         Random rand = new Random();
-
-        // create an empty game board
-        char[][] gameBoard = {{' ', '|', ' ', '|', ' '},
-                              {'-', '+', '-', '+', '-'},
-                              {' ', '|', ' ', '|', ' '},
-                              {'-', '+', '-', '+', '-'},
-                              {' ', '|', ' ', '|', ' '}};
 
     while (true){
 
@@ -31,22 +52,33 @@ public class TicTacToe {
             playerPosition = scanner.nextInt();
         }
 
+        // this adds all the turns that the player has done, all the turns so far, and deletes from available slots
         playerTurns.add(playerPosition);
-        turn(playerPosition, gameBoard, true);
+        available.remove((Integer) playerPosition);
+        turn(playerPosition, gameBoard, "human");
 
         // if someone won, then we can end the game.
         if (won(gameBoard)) {
             break;
         }
 
+
         // CPU TURN
+
+        /*
         cpuPosition = rand.nextInt(9) + 1;
         // make sure that the position isn't taken
         while(playerTurns.contains(cpuPosition) || cpuTurns.contains(cpuPosition)) {
             cpuPosition = rand.nextInt(9) + 1;
         }
+        */
+
+        // ask the cpu to create a new position that takes all the moves possible (to find the best move it can make)
+        cpuPosition = findBestMove(available);
+
         cpuTurns.add(cpuPosition);
-        turn(cpuPosition, gameBoard, false);
+        available.remove((Integer) cpuPosition);
+        turn(cpuPosition, gameBoard, "cpu");
 
         // if someone won, then we can end the game.
         if (won(gameBoard)) {
@@ -59,6 +91,31 @@ public class TicTacToe {
 
 
     }
+
+    private static int findBestMove(List available) {
+        int bestScore = -Integer.MAX_VALUE;
+        int bestMove = NULL;
+
+        // loop through every immediate move we can make at the current board.
+        for (Object i: available) {
+            // try each move!
+            turn((Integer) i, gameBoard, "cpu");
+            // evaluate the move and give it a score.
+            int score = minimax();
+            turn((Integer) i, gameBoard, "erase");
+            if (score > bestScore) {
+                bestScore = score;
+                bestMove = (Integer) i;
+            }
+
+        }
+        return bestMove;
+    }
+
+    private static int minimax() {
+        return 2;
+    }
+
 
     private static void printGameBoard(char[][] gameBoard) {
         for (char[] row : gameBoard ) {
@@ -111,9 +168,17 @@ public class TicTacToe {
         return false;
     }
 
-    private static void turn (int position, char[][] gameBoard, boolean playerTurn) {
+    private static void turn (int position, char[][] gameBoard, String player) {
 
-        char symbol = playerTurn == true ? 'X' : 'O';
+        char symbol;
+
+        if (player.equals("human")) {
+            symbol = 'X';
+        } else if (player.equals("cpu")) {
+            symbol = 'O';
+        } else {
+            symbol = ' ';
+        }
 
         switch (position) {
             case 1:
