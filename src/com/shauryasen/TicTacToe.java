@@ -1,7 +1,8 @@
 package com.shauryasen;
 
-import java.lang.reflect.Array;
 import java.util.*;
+import java.util.ArrayList;
+
 
 import static java.sql.Types.NULL;
 
@@ -58,11 +59,9 @@ public class TicTacToe {
         turn(playerPosition, gameBoard, "human");
 
         // if someone won, then we can end the game.
-        if (won(gameBoard)) {
+        if (!(won(gameBoard, false) == NULL)) {
             break;
         }
-
-
         // CPU TURN
 
         /*
@@ -74,14 +73,14 @@ public class TicTacToe {
         */
 
         // ask the cpu to create a new position that takes all the moves possible (to find the best move it can make)
-        cpuPosition = findBestMove(available);
+        cpuPosition = findBestMove();
 
         cpuTurns.add(cpuPosition);
         available.remove((Integer) cpuPosition);
         turn(cpuPosition, gameBoard, "cpu");
 
         // if someone won, then we can end the game.
-        if (won(gameBoard)) {
+        if (!(won(gameBoard, false) == NULL)) {
             break;
         }
 
@@ -92,28 +91,89 @@ public class TicTacToe {
 
     }
 
-    private static int findBestMove(List available) {
-        int bestScore = -Integer.MAX_VALUE;
+    private static int findBestMove() {
+        int bestScore = -10;
         int bestMove = NULL;
+        ListIterator<Integer> availableIt = available.listIterator();
+
+
 
         // loop through every immediate move we can make at the current board.
-        for (Object i: available) {
+        while (availableIt.hasNext()) {
+            Integer i = availableIt.next();
+
             // try each move!
-            turn((Integer) i, gameBoard, "cpu");
+            turn(i, gameBoard, "cpu");
+            cpuTurns.add(i);
+            availableIt.remove();
+
             // evaluate the move and give it a score.
             int score = minimax();
-            turn((Integer) i, gameBoard, "erase");
+
+            //undo the changes
+            cpuTurns.remove(i);
+            availableIt.add(i);
+
+            turn(i, gameBoard, "erase");
+
             if (score > bestScore) {
                 bestScore = score;
-                bestMove = (Integer) i;
+                bestMove = i;
             }
 
         }
+        System.out.println(bestMove);
         return bestMove;
     }
 
-    private static int minimax() {
-        return 2;
+    private static int minimax(/* int depth, boolean maximizingPlayer */) {
+        /*
+        int score;
+        int bestScore;
+
+        if ( !(won(gameBoard, true) == NULL) ) {
+            return (won(gameBoard, true));
+        }
+
+
+        if (maximizingPlayer) {
+            bestScore = -10;
+            for (int i: available) {
+                // try all the possible spots
+                turn(i, gameBoard, "cpu");
+                playerTurns.add(i);
+                available.remove(i);
+
+                score = (minimax(depth + 1, false));
+
+                playerTurns.remove(i);
+                available.add(i);
+                turn(i, gameBoard, "erase");
+
+                bestScore = Math.max(score, bestScore);
+            }
+        } else {
+            bestScore = 10;
+            for (int i : available) {
+                // try all the possible spots
+                turn(i, gameBoard, "human");
+                playerTurns.add(i);
+                available.remove(i);
+
+                score = (minimax(depth + 1, true));
+
+                playerTurns.remove(i);
+                available.add(i);
+                turn(i, gameBoard, "erase");
+
+                bestScore = Math.min(score, bestScore);
+            }
+        }
+        return bestScore;
+
+         */
+        return 1;
+
     }
 
 
@@ -126,7 +186,8 @@ public class TicTacToe {
         }
     }
 
-    private static boolean won(char[][] gameBoard) {
+    private static int won(char[][] gameBoard, boolean fake) {
+        int tie;
         // store all win conditions
         List topRow = Arrays.asList(1,2,3);
         List midRow = Arrays.asList(4,5,6);
@@ -148,24 +209,47 @@ public class TicTacToe {
         winPositions.add(cross1);
         winPositions.add(cross2);
 
-        for (List cur : winPositions) {
-            if(playerTurns.containsAll(cur)) {
-                printGameBoard(gameBoard);
-                System.out.println("congrats! you won!!");
-                return true;
-            } else if(cpuTurns.containsAll(cur)) {
-                printGameBoard(gameBoard);
-                System.out.println("The computer won :(");
-                return true;
-            } else if (playerTurns.size() + cpuTurns.size() == 9){
+        if (fake == true) {
+            tie = 0;
+            for (List cur : winPositions) {
+                if(playerTurns.containsAll(cur)) {
+                    return -1;
+                } else if(cpuTurns.containsAll(cur)) {
+                    return 1;
+                } else {
+                    tie++;
+                }
+
+            }
+            if (playerTurns.size() + cpuTurns.size() == 9 && tie == 8) {
+                return 0;
+            }
+        } else {
+            tie = 0;
+            for (List cur : winPositions) {
+                if(playerTurns.containsAll(cur)) {
+                    printGameBoard(gameBoard);
+                    System.out.println("congrats! you won!!");
+                    return -1;
+                } else if(cpuTurns.containsAll(cur)) {
+                    printGameBoard(gameBoard);
+                    System.out.println("The computer won :(");
+                    return 1;
+                } else {
+                    tie++;
+                }
+
+            }
+            if (playerTurns.size() + cpuTurns.size() == 9 && tie == 8) {
                 printGameBoard(gameBoard);
                 System.out.println("TIE GAME!");
-                return true;
+                return 0;
+
             }
 
         }
 
-        return false;
+        return NULL;
     }
 
     private static void turn (int position, char[][] gameBoard, String player) {
