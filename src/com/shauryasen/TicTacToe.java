@@ -10,6 +10,9 @@ public class TicTacToe {
     static ArrayList<Integer> playerTurns = new ArrayList<Integer>();
     static ArrayList<Integer> cpuTurns = new ArrayList<Integer>();
     static ArrayList<Integer> available = new ArrayList<Integer>();
+    static ArrayList<Integer> availableAdder = new ArrayList<Integer>();
+    static Integer addBack = 0;
+    //List huh = Arrays.asList(1,2,3,4,5,6,7,8,9);
     // static List<Integer> available = Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9);
 
     /*
@@ -25,7 +28,7 @@ public class TicTacToe {
             {' ', '|', ' ', '|', ' '}};
 
     public static void main(String[] args) {
-        // this is so dumb but add all the numbers to available NOTHING ELSE WORKED AND IM LAZY I'M SORRY
+        // this is so dumb but add all the numbers to available NOTHING ELSE WORKED
         available.add(1);
         available.add(2);
         available.add(3);
@@ -38,142 +41,156 @@ public class TicTacToe {
 
         int cpuPosition;
         int playerPosition;
-        Random rand = new Random();
 
-    while (true){
+        while (true){
 
-        // PLAYER TURN
-        // ask for user input
-        Scanner scanner = new Scanner(System.in);
-        System.out.print("Enter number 1-9 corresponding with the game board: ");
-        playerPosition = scanner.nextInt();
-        // make sure that the position isn't taken.
-        while(playerTurns.contains(playerPosition) || cpuTurns.contains(playerPosition)) {
-            System.out.print("That position is already taken! Try another: ");
+            // CPU TURN
+
+            //cpuPosition = rand.nextInt(9) + 1;
+            //while(playerTurns.contains(cpuPosition) || cpuTurns.contains(cpuPosition)) {
+            //    cpuPosition = rand.nextInt(9) + 1;
+            //}
+
+            // ask the cpu to create a new position that takes all the moves possible (to find the best move it can make)
+            cpuPosition = findBestMove();
+
+            cpuTurns.add(cpuPosition);
+            available.remove((Integer) cpuPosition);
+            turn(cpuPosition, "cpu");
+
+            // if someone won, then we can end the game.
+            if (won(false) != 10) {
+                break;
+            }
+
+            // print the board
+            printGameBoard(gameBoard);
+
+            // PLAYER TURN
+            // ask for user input
+            Scanner scanner = new Scanner(System.in);
+            System.out.print("Enter number 1-9 corresponding with the game board: ");
             playerPosition = scanner.nextInt();
+            // make sure that the position isn't taken.
+            while(playerTurns.contains(playerPosition) || cpuTurns.contains(playerPosition)) {
+                System.out.print("That position is already taken! Try another: ");
+                playerPosition = scanner.nextInt();
+            }
+
+            // this adds all the turns that the player has done, all the turns so far, and deletes from available slots
+            playerTurns.add(playerPosition);
+            available.remove((Integer) playerPosition);
+            turn(playerPosition, "human");
+
+            // if someone won, then we can end the game.
+            if (won(false) != 10) {
+                break;
+            }
+
         }
-
-        // this adds all the turns that the player has done, all the turns so far, and deletes from available slots
-        playerTurns.add(playerPosition);
-        available.remove((Integer) playerPosition);
-        turn(playerPosition, gameBoard, "human");
-
-        // if someone won, then we can end the game.
-        if (!(won(gameBoard, false) == NULL)) {
-            break;
-        }
-        // CPU TURN
-
-        /*
-        cpuPosition = rand.nextInt(9) + 1;
-        // make sure that the position isn't taken
-        while(playerTurns.contains(cpuPosition) || cpuTurns.contains(cpuPosition)) {
-            cpuPosition = rand.nextInt(9) + 1;
-        }
-        */
-
-        // ask the cpu to create a new position that takes all the moves possible (to find the best move it can make)
-        cpuPosition = findBestMove();
-
-        cpuTurns.add(cpuPosition);
-        available.remove((Integer) cpuPosition);
-        turn(cpuPosition, gameBoard, "cpu");
-
-        // if someone won, then we can end the game.
-        if (!(won(gameBoard, false) == NULL)) {
-            break;
-        }
-
-        // print out the board.
-        printGameBoard(gameBoard);
-    }
-
 
     }
 
     private static int findBestMove() {
-        int bestScore = -10;
+        int score;
+        int bestScore = -1000;
         int bestMove = NULL;
-        ListIterator<Integer> availableIt = available.listIterator();
-
-
 
         // loop through every immediate move we can make at the current board.
-        while (availableIt.hasNext()) {
-            Integer i = availableIt.next();
+        for (Integer i = 1; i < 9; i++) {
 
-            // try each move!
-            turn(i, gameBoard, "cpu");
-            cpuTurns.add(i);
-            availableIt.remove();
+            if (available.contains(i)) {
 
-            // evaluate the move and give it a score.
-            int score = minimax();
+                // try all the possible spots
+                turn(i, "cpu");
+                cpuTurns.add(i);
+                available.remove(i);
 
-            //undo the changes
-            cpuTurns.remove(i);
-            availableIt.add(i);
+                score = (minimax(0, false));
 
-            turn(i, gameBoard, "erase");
+                // undo the changes
+                cpuTurns.remove(i);
+                available.add(i);
+                Collections.sort(available);
 
-            if (score > bestScore) {
-                bestScore = score;
-                bestMove = i;
+                turn(i, "erase");
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMove = i;
+
+                }
             }
 
         }
-        System.out.println(bestMove);
+
         return bestMove;
     }
 
-    private static int minimax(/* int depth, boolean maximizingPlayer */) {
-        /*
+    private static int minimax(int depth, boolean maximizingPlayer) {
+        if (won(true) != 10) {
+            return (won(true));
+        }
+
         int score;
         int bestScore;
 
-        if ( !(won(gameBoard, true) == NULL) ) {
-            return (won(gameBoard, true));
-        }
-
-
         if (maximizingPlayer) {
-            bestScore = -10;
-            for (int i: available) {
-                // try all the possible spots
-                turn(i, gameBoard, "cpu");
-                playerTurns.add(i);
-                available.remove(i);
+            bestScore = -1000;
 
-                score = (minimax(depth + 1, false));
+            for (Integer i = 1; i < 9; i++) {
+                // check if each spot in the board is available - if so then evaluate it
+                if (available.contains(i)) {
 
-                playerTurns.remove(i);
-                available.add(i);
-                turn(i, gameBoard, "erase");
+                    // try all the possible spots
+                    turn(i, "cpu");
+                    cpuTurns.add(i);
+                    available.remove(i);
 
-                bestScore = Math.max(score, bestScore);
+                    score = minimax(depth + 1, false);
+
+                    // undo the changes
+                    cpuTurns.remove(i);
+                    available.add(i);
+                    Collections.sort(available);
+
+                    turn(i, "erase");
+
+                    bestScore = Math.max(score, bestScore);
+
+                }
+
             }
+            return bestScore;
+
         } else {
-            bestScore = 10;
-            for (int i : available) {
-                // try all the possible spots
-                turn(i, gameBoard, "human");
-                playerTurns.add(i);
-                available.remove(i);
+            bestScore = 1000;
+            for (Integer i = 1; i < 9; i++) {
 
-                score = (minimax(depth + 1, true));
+                if (available.contains(i)) {
 
-                playerTurns.remove(i);
-                available.add(i);
-                turn(i, gameBoard, "erase");
+                    // try all the possible spots
+                    turn(i, "human");
+                    playerTurns.add(i);
+                    available.remove(i);
 
-                bestScore = Math.min(score, bestScore);
+                    score = minimax(depth + 1, true);
+
+                    // undo the changes
+                    playerTurns.remove(i);
+                    available.add(i);
+                    Collections.sort(available);
+
+                    turn(i, "erase");
+
+                    bestScore = Math.min(score, bestScore);
+
+                }
+
             }
+
+            return bestScore;
         }
-        return bestScore;
-
-         */
-        return 1;
-
     }
 
 
@@ -186,7 +203,7 @@ public class TicTacToe {
         }
     }
 
-    private static int won(char[][] gameBoard, boolean fake) {
+    private static int won(boolean fake) {
         int tie;
         // store all win conditions
         List topRow = Arrays.asList(1,2,3);
@@ -210,22 +227,18 @@ public class TicTacToe {
         winPositions.add(cross2);
 
         if (fake == true) {
-            tie = 0;
             for (List cur : winPositions) {
-                if(playerTurns.containsAll(cur)) {
+                if (playerTurns.containsAll(cur)) {
                     return -1;
-                } else if(cpuTurns.containsAll(cur)) {
+                } else if (cpuTurns.containsAll(cur)) {
                     return 1;
-                } else {
-                    tie++;
                 }
-
             }
-            if (playerTurns.size() + cpuTurns.size() == 9 && tie == 8) {
+            if (playerTurns.size() + cpuTurns.size() == 9) {
                 return 0;
             }
+
         } else {
-            tie = 0;
             for (List cur : winPositions) {
                 if(playerTurns.containsAll(cur)) {
                     printGameBoard(gameBoard);
@@ -235,12 +248,9 @@ public class TicTacToe {
                     printGameBoard(gameBoard);
                     System.out.println("The computer won :(");
                     return 1;
-                } else {
-                    tie++;
                 }
-
             }
-            if (playerTurns.size() + cpuTurns.size() == 9 && tie == 8) {
+            if (playerTurns.size() + cpuTurns.size() == 9) {
                 printGameBoard(gameBoard);
                 System.out.println("TIE GAME!");
                 return 0;
@@ -249,10 +259,10 @@ public class TicTacToe {
 
         }
 
-        return NULL;
+        return 10;
     }
 
-    private static void turn (int position, char[][] gameBoard, String player) {
+    private static void turn (int position, String player) {
 
         char symbol;
 
